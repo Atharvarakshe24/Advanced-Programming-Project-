@@ -1,0 +1,65 @@
+[
+  {
+    "name": "A Brief History of Time",
+    "author": "Stephen Hawking",
+    "date": "1988",
+    "category": "Book",
+    "id": "d1b29480-e8c9-4818-b21f-6d22262e44b1"
+  },
+  {
+    "name": "The Diary of a Young Girl",
+    "author": "Anne Frank",
+    "date": "1947",
+    "category": "Book",
+    "id": "c76beb52-d940-4f91-895b-1a0f40be204b"
+  },
+  {
+    "name": "Leaves of Grass",
+    "author": "Walt Whitman",
+    "date": "1855",
+    "category": "Book",
+    "id": "4522eb1d-1ce4-4cb0-b378-9429df2df929"
+  },
+  {
+    "name": "The Selfish Gene",
+    "author": "Richard Dawkins",
+    "date": "1976",
+    "category": "Book",
+    "id": "29dfdd52-5cad-4c23-9b43-b58fabf87ed9"
+  },
+  {
+    "name": "Sapiens: A Brief History of Humankind",
+    "author": "Yuval Noah Harari",
+    "date": "2011",
+    "category": "Book",
+    "id": "76caf57a-8561-4df8-a3ea-42d7d124a15c"
+  },
+  {
+    "name": "Atomic Habits",
+    "author": "James Clear",
+    "date": "2018",
+    "category": "Book",
+    "id": "49f4a3aa-c714-4e13-936d-81986378f6e0"
+  },
+  {
+    "name": "Inception",
+    "author": "Christopher Nolan",
+    "date": "2010",
+    "category": "Film",
+    "id": "film1"
+  },
+  {
+    "name": "The Matrix",
+    "author": "Wachowski Brothers",
+    "date": "1999",
+    "category": "Film",
+    "id": "film2"
+  },
+  {
+    "name": "National Geographic",
+    "author": "Various",
+    "date": "2023",
+    "category": "Magazine",
+    "id": "mag1"
+  }
+]
