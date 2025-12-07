@@ -54,12 +54,5 @@
     "date": "1999",
     "category": "Film",
     "id": "film2"
-  },
-  {
-    "name": "National Geographic",
-    "author": "Various",
-    "date": "2023",
-    "category": "Magazine",
-    "id": "mag1"
   }
 ]
