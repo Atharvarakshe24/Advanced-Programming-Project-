@@ -1,6 +1,6 @@
 import json
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, scrolledtext
 from pathlib import Path
 import uuid
 import requests
@@ -9,108 +9,186 @@ from requests.exceptions import RequestException
 
 DATA_FILE = Path(__file__).with_name("media.json")
 
+# Modern color palette
+COLOR_PRIMARY = "#1E88E5"
+COLOR_SECONDARY = "#42A5F5"
+COLOR_ACCENT = "#FF6F00"
+COLOR_DARK = "#0D47A1"
+COLOR_BG = "#ECEFF1"
+COLOR_CARD = "#FFFFFF"
+COLOR_TEXT = "#212121"
+COLOR_TEXT_LIGHT = "#616161"
+COLOR_SUCCESS = "#4CAF50"
+COLOR_WARNING = "#FFC107"
+
 
 class LibraryApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Atharva Rakshe Library")
-        self.root.geometry("900x600")
+        self.root.geometry("1100x700")
+        self.root.configure(bg=COLOR_BG)
 
         self.data = []
         self.sort_ascending = True
+        self.view_mode = "table"  # Can be "table" or "grid"
+        self.selected_item = None
 
-        # Configure Treeview style with alternating row colors
-        style = ttk.Style()
-        style.theme_use('clam')
-        style.configure("Treeview", rowheight=28, font=("Arial", 10))
-        style.configure("Treeview.Heading", font=("Arial", 11, "bold"))
-        style.configure("Treeview", background="#F5F5F5", fieldbackground="#F5F5F5")
-        style.map('Treeview', background=[('selected', '#5C4A99')])
+        # Configure styles
+        self.setup_styles()
 
-        # Header frame
-        header = tk.Frame(root, bg="#5C4A99", height=80)
+        # Header frame with gradient effect
+        header = tk.Frame(root, bg=COLOR_DARK, height=100)
         header.pack(side=tk.TOP, fill=tk.X)
         header.pack_propagate(False)
 
-        title_label = tk.Label(header, text="📚  Scholar's Digital Library", font=("Arial", 24, "bold"), fg="white", bg="#5C4A99")
-        title_label.pack(pady=(10, 0))
-        subtitle_label = tk.Label(header, text="Organize and manage your media collection", font=("Arial", 10), fg="#E0E0E0", bg="#5C4A99")
-        subtitle_label.pack(pady=(0, 10))
+        # Logo and title in header
+        title_frame = tk.Frame(header, bg=COLOR_DARK)
+        title_frame.pack(fill=tk.X, padx=20, pady=(15, 10))
 
-        # Top frame: category, load, search
-        top = ttk.Frame(root, padding=(8, 6))
-        top.pack(side=tk.TOP, fill=tk.X)
+        title_label = tk.Label(title_frame, text="📚  Scholar's Digital Library", font=("Segoe UI", 28, "bold"), fg=COLOR_SECONDARY, bg=COLOR_DARK)
+        title_label.pack(side=tk.LEFT)
 
-        ttk.Label(top, text="Category:").pack(side=tk.LEFT)
+        subtitle_label = tk.Label(header, text="Organize and manage your media collection", font=("Segoe UI", 12, "bold"), fg="#E3F2FD", bg=COLOR_DARK)
+        subtitle_label.pack(pady=(0, 6))
+
+        # Accent bar to make the header feel more polished
+        accent = tk.Frame(header, bg=COLOR_ACCENT, height=4)
+        accent.pack(fill=tk.X, padx=20, pady=(0, 12))
+
+        # Filter and search bar - modernized
+        toolbar = tk.Frame(root, bg=COLOR_BG, height=70)
+        toolbar.pack(side=tk.TOP, fill=tk.X, padx=15, pady=(10, 5))
+        toolbar.pack_propagate(False)
+
+        # Left side - filters
+        left_toolbar = tk.Frame(toolbar, bg=COLOR_BG)
+        left_toolbar.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        ttk.Label(left_toolbar, text="📁 Category:", font=("Segoe UI", 10, "bold")).pack(side=tk.LEFT, padx=(0, 5))
         self.category_var = tk.StringVar()
-        self.category_cb = ttk.Combobox(top, textvariable=self.category_var, width=18, state='readonly')
-        self.category_cb.pack(side=tk.LEFT, padx=(6, 8))
-        # Bind selection event to immediately filter by category when user selects one
+        self.category_cb = ttk.Combobox(left_toolbar, textvariable=self.category_var, width=15, state='readonly', font=("Segoe UI", 10))
+        self.category_cb.pack(side=tk.LEFT, padx=(0, 15))
         self.category_cb.bind('<<ComboboxSelected>>', lambda e: self.on_category_change())
 
-        self.load_btn = ttk.Button(top, text="Load", command=self.on_load)
-        self.load_btn.pack(side=tk.LEFT)
-
-        ttk.Label(top, text="  Name:").pack(side=tk.LEFT, padx=(10, 4))
+        ttk.Label(left_toolbar, text="🔍 Search:", font=("Segoe UI", 10, "bold")).pack(side=tk.LEFT, padx=(0, 5))
         self.search_var = tk.StringVar()
-        self.search_entry = ttk.Entry(top, textvariable=self.search_var, width=30)
-        self.search_entry.pack(side=tk.LEFT)
-        self.search_btn = ttk.Button(top, text="Search", command=self.on_search)
-        self.search_btn.pack(side=tk.LEFT, padx=(6, 8))
+        self.search_entry = ttk.Entry(left_toolbar, textvariable=self.search_var, width=25, font=("Segoe UI", 10))
+        self.search_entry.pack(side=tk.LEFT, padx=(0, 8))
+        self.search_entry.bind('<Return>', lambda e: self.on_search())
 
-        # Action buttons
-        self.erase_btn = ttk.Button(top, text="Erase", command=self.on_erase)
-        self.erase_btn.pack(side=tk.RIGHT, padx=(6, 0))
-        self.new_btn = ttk.Button(top, text="New", command=self.on_new)
-        self.new_btn.pack(side=tk.RIGHT, padx=(6, 0))
+        # Right side - action buttons
+        right_toolbar = tk.Frame(toolbar, bg=COLOR_BG)
+        right_toolbar.pack(side=tk.RIGHT, fill=tk.X)
 
-        self.sort_btn = ttk.Button(top, text="Sort by Date ↑", command=self.on_sort_toggle)
-        self.sort_btn.pack(side=tk.RIGHT, padx=(6, 14))
+        self.sort_btn = tk.Button(right_toolbar, text="↕ Sort Date", command=self.on_sort_toggle, 
+                                   bg=COLOR_PRIMARY, fg="white", font=("Segoe UI", 9, "bold"), 
+                                   padx=12, pady=6, relief=tk.FLAT, cursor="hand2")
+        self.sort_btn.pack(side=tk.LEFT, padx=(0, 8))
 
-        # Treeview container frame
-        tree_container = tk.Frame(root)
-        tree_container.pack(side=tk.TOP, fill=tk.BOTH, expand=True, padx=8, pady=(6, 8))
+        self.new_btn = tk.Button(right_toolbar, text="➕ Add Item", command=self.on_new,
+                                 bg=COLOR_SUCCESS, fg="white", font=("Segoe UI", 9, "bold"),
+                                 padx=12, pady=6, relief=tk.FLAT, cursor="hand2")
+        self.new_btn.pack(side=tk.LEFT, padx=(0, 8))
 
-        # Treeview (with serial number column)
+        self.load_btn = tk.Button(right_toolbar, text="🔄 Refresh", command=self.on_load,
+                                  bg=COLOR_SECONDARY, fg="white", font=("Segoe UI", 9, "bold"),
+                                  padx=12, pady=6, relief=tk.FLAT, cursor="hand2")
+        self.load_btn.pack(side=tk.LEFT, padx=(0, 8))
+
+        self.erase_btn = tk.Button(right_toolbar, text="🗑 Delete", command=self.on_erase,
+                                   bg="#E53935", fg="white", font=("Segoe UI", 9, "bold"),
+                                   padx=12, pady=6, relief=tk.FLAT, cursor="hand2")
+        self.erase_btn.pack(side=tk.LEFT)
+
+        # Main content area with treeview
+        content_frame = tk.Frame(root, bg=COLOR_BG)
+        content_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True, padx=15, pady=(5, 15))
+
+        # Treeview container with rounded appearance
+        tree_container = tk.Frame(content_frame, bg=COLOR_CARD, relief=tk.FLAT, bd=1)
+        tree_container.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+        # Treeview
         columns = ("sno", "name", "author", "date", "category")
-        self.tree = ttk.Treeview(tree_container, columns=columns, show='headings', style="Treeview")
-        # Headings: serial number + book fields
+        self.tree = ttk.Treeview(tree_container, columns=columns, show='tree headings', height=20)
+        
+        self.tree.heading("#0", text="")
         self.tree.heading("sno", text="S.No")
-        self.tree.heading("name", text="Name")
-        self.tree.heading("author", text="Author")
-        self.tree.heading("date", text="Date")
-        self.tree.heading("category", text="Category")
+        self.tree.heading("name", text="📖 Title")
+        self.tree.heading("author", text="✍️ Author")
+        self.tree.heading("date", text="📅 Year")
+        self.tree.heading("category", text="🏷️ Type")
 
-        # Column sizes and alignment
-        self.tree.column("sno", anchor='center', width=60)
-        self.tree.column("name", anchor='center', width=360)
-        self.tree.column("author", anchor='center', width=160)
+        self.tree.column("#0", width=0, stretch=False)
+        self.tree.column("sno", anchor='center', width=50)
+        self.tree.column("name", anchor='w', width=350)
+        self.tree.column("author", anchor='w', width=200)
         self.tree.column("date", anchor='center', width=80)
-        self.tree.column("category", anchor='center', width=120)
+        self.tree.column("category", anchor='center', width=100)
 
-        # Bind tags to rows for alternating colors
-        self.tree.tag_configure('oddrow', background='#FFFFFF')
-        self.tree.tag_configure('evenrow', background='#E8F4F8')
+        # Configure row colors
+        self.tree.tag_configure('oddrow', background='#FFFFFF', foreground=COLOR_TEXT)
+        self.tree.tag_configure('evenrow', background='#F5F5F5', foreground=COLOR_TEXT)
+        self.tree.tag_configure('selected_row', background=COLOR_PRIMARY, foreground='white')
 
+        # Scrollbars
         vsb = ttk.Scrollbar(tree_container, orient=tk.VERTICAL, command=self.tree.yview)
-        self.tree.configure(yscroll=vsb.set)
+        hsb = ttk.Scrollbar(tree_container, orient=tk.HORIZONTAL, command=self.tree.xview)
+        self.tree.configure(yscroll=vsb.set, xscroll=hsb.set)
+
         vsb.pack(side=tk.RIGHT, fill=tk.Y)
+        hsb.pack(side=tk.BOTTOM, fill=tk.X)
         self.tree.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
-        # Empty state label
-        self.empty_label = tk.Label(tree_container, text="Add book to the library", font=("Arial", 14), fg="#999999")
-        self.empty_label.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-
-        # Context menu for right-click actions (Edit / Cancel)
-        self.context_menu = tk.Menu(self.root, tearoff=0)
-        self.context_menu.add_command(label="Edit", command=self.on_edit_selected)
-        self.context_menu.add_command(label="Cancel", command=lambda: None)
-
-        # Bind right-click on tree to show context menu
+        # Bind right-click context menu
         self.tree.bind('<Button-3>', self.on_right_click)
+        self.tree.bind('<Button-1>', self.on_tree_click)
 
-        # load initial
+        # Context menu
+        self.context_menu = tk.Menu(self.root, tearoff=0)
+        self.context_menu.add_command(label="✏️  Edit", command=self.on_edit_selected)
+        self.context_menu.add_command(label="👁️  View Details", command=self.on_view_details)
+        self.context_menu.add_separator()
+        self.context_menu.add_command(label="🗑️  Delete", command=self.on_erase)
+
+        # Status bar
+        status_frame = tk.Frame(root, bg=COLOR_DARK, height=30)
+        status_frame.pack(side=tk.BOTTOM, fill=tk.X)
+        status_frame.pack_propagate(False)
+
+        self.status_label = tk.Label(status_frame, text="Ready", font=("Segoe UI", 9), fg="white", bg=COLOR_DARK, justify=tk.LEFT)
+        self.status_label.pack(side=tk.LEFT, padx=15, pady=5)
+
+        # Empty state label
+        # Empty state label
+        self.empty_frame = tk.Frame(tree_container, bg=COLOR_CARD)
+        self.empty_label = tk.Label(self.empty_frame, text="📚 Your library is empty\nStart by adding your first item!", 
+                                   font=("Segoe UI", 16, "bold"), fg=COLOR_TEXT_LIGHT, bg=COLOR_CARD)
+        self.empty_label.pack(pady=40)
+
+        # Load initial data
         self.on_load()
+
+    def setup_styles(self):
+        """Configure modern ttk styles"""
+        style = ttk.Style()
+        style.theme_use('clam')
+        
+        # Configure button style
+        style.configure('TButton', font=('Segoe UI', 9), padding=6)
+        style.configure('TCombobox', font=('Segoe UI', 10), padding=3)
+        style.configure('TLabel', font=('Segoe UI', 10), background=COLOR_BG)
+        
+        # Treeview style
+        style.configure('Treeview', rowheight=32, font=('Segoe UI', 10), 
+                       fieldbackground=COLOR_CARD, background=COLOR_CARD)
+        style.configure('Treeview.Heading', font=('Segoe UI', 10, 'bold'),
+                       background=COLOR_PRIMARY, foreground='white')
+        style.map('Treeview.Heading', background=[('active', COLOR_SECONDARY)])
+        style.map('Treeview', 
+                 background=[('selected', COLOR_PRIMARY)],
+                 foreground=[('selected', 'white')])
 
     def read_json(self):
         if not DATA_FILE.exists():
@@ -184,7 +262,7 @@ class LibraryApp:
             filtered = [b for b in filtered if b.get('category') == category]
         if name_filter:
             q = name_filter.strip().lower()
-            filtered = [b for b in filtered if q in b.get('name','').lower()]
+            filtered = [b for b in filtered if q in b.get('name','').lower() or q in b.get('author','').lower()]
 
         # sort by date
         def get_year(b):
@@ -196,21 +274,26 @@ class LibraryApp:
         filtered = sorted(filtered, key=get_year, reverse=not self.sort_ascending)
 
         for idx, b in enumerate(filtered):
-            # Serial number should reflect the visible row index (1-based)
             serial = idx + 1
             tag = 'evenrow' if idx % 2 == 0 else 'oddrow'
-            # Insert with serial number as first column and use book id as item iid
             item_id = b.get('id') or str(uuid.uuid4())
-            # Ensure id present in data
             if 'id' not in b:
                 b['id'] = item_id
-            self.tree.insert('', tk.END, iid=item_id, values=(serial, b.get('name',''), b.get('author',''), b.get('date',''), b.get('category','')), tags=(tag,))
+            
+            self.tree.insert('', tk.END, iid=item_id, 
+                           values=(serial, b.get('name',''), b.get('author',''), 
+                                  b.get('date',''), b.get('category','')), tags=(tag,))
 
-        # Show/hide empty state label
+        # Update status
+        total = len(self.data)
+        shown = len(filtered)
+        self.status_label.config(text=f"📊 Showing {shown} of {total} items")
+
+        # Show/hide empty state
         if not filtered:
-            self.empty_label.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+            self.empty_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
         else:
-            self.empty_label.pack_forget()
+            self.empty_frame.pack_forget()
 
     def on_search(self):
         cat = self.category_var.get()
@@ -224,18 +307,6 @@ class LibraryApp:
 
     def on_new(self):
         NewBookWindow(self)
-
-    def on_right_click(self, event):
-        """Show context menu when user right-clicks a row."""
-        # Identify the row under the mouse pointer
-        iid = self.tree.identify_row(event.y)
-        if iid:
-            # Select the row so actions apply to it
-            self.tree.selection_set(iid)
-            try:
-                self.context_menu.tk_popup(event.x_root, event.y_root)
-            finally:
-                self.context_menu.grab_release()
 
     def on_edit_selected(self):
         """Called when Edit is chosen from the context menu; opens edit dialog."""
@@ -292,42 +363,156 @@ class LibraryApp:
 
     def on_sort_toggle(self):
         self.sort_ascending = not self.sort_ascending
-        arrow = '↑' if self.sort_ascending else '↓'
-        self.sort_btn.config(text=f"Sort by Date {arrow}")
+        arrow = '↕ Sort Date (↑ Ascending)' if self.sort_ascending else '↕ Sort Date (↓ Descending)'
+        self.sort_btn.config(text=arrow)
         self.refresh_treeview(category=self.category_var.get(), name_filter=self.search_var.get())
+
+    def on_tree_click(self, event):
+        """Handle tree item click"""
+        item = self.tree.identify('item', event.x, event.y)
+        if item:
+            self.selected_item = item
+
+    def on_right_click(self, event):
+        """Show context menu when user right-clicks a row."""
+        item = self.tree.identify_row(event.y)
+        if item:
+            self.tree.selection_set(item)
+            self.selected_item = item
+            try:
+                self.context_menu.tk_popup(event.x_root, event.y_root)
+            finally:
+                self.context_menu.grab_release()
+
+    def on_view_details(self):
+        """Show detailed view of selected item"""
+        sel = self.tree.selection()
+        if not sel:
+            messagebox.showwarning("No selection", "Please select an item to view")
+            return
+        
+        iid = sel[0]
+        book = None
+        for b in self.data:
+            if str(b.get('id')) == str(iid):
+                book = b
+                break
+        
+        if not book:
+            return
+        
+        # Create details window
+        details_window = tk.Toplevel(self.root)
+        details_window.title(f"Details - {book.get('name','Unknown')}")
+        details_window.geometry("500x400")
+        details_window.configure(bg=COLOR_BG)
+        
+        # Header
+        header = tk.Frame(details_window, bg=COLOR_PRIMARY, height=60)
+        header.pack(fill=tk.X)
+        header.pack_propagate(False)
+        
+        title = tk.Label(header, text=book.get('name',''), font=("Segoe UI", 16, "bold"),
+                        fg="white", bg=COLOR_PRIMARY, wraplength=450)
+        title.pack(pady=15)
+        
+        # Content
+        content = tk.Frame(details_window, bg=COLOR_BG)
+        content.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        
+        # Details
+        details = [
+            ("Title:", book.get('name','')),
+            ("Author:", book.get('author','')),
+            ("Year:", book.get('date','')),
+            ("Category:", book.get('category','')),
+            ("ID:", book.get('id','')[:8] + '...'),
+        ]
+        
+        for label, value in details:
+            frame = tk.Frame(content, bg=COLOR_BG)
+            frame.pack(fill=tk.X, pady=5)
+            
+            lbl = tk.Label(frame, text=label, font=("Segoe UI", 10, "bold"),
+                          fg=COLOR_PRIMARY, bg=COLOR_BG, width=12, anchor='w')
+            lbl.pack(side=tk.LEFT)
+            
+            val = tk.Label(frame, text=value, font=("Segoe UI", 10),
+                          fg=COLOR_TEXT, bg=COLOR_BG, wraplength=350, justify=tk.LEFT)
+            val.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(10, 0))
+        
+        # Close button
+        close_btn = tk.Button(details_window, text="Close", command=details_window.destroy,
+                             bg=COLOR_PRIMARY, fg="white", font=("Segoe UI", 9, "bold"),
+                             padx=20, pady=8, relief=tk.FLAT, cursor="hand2")
+        close_btn.pack(pady=15)
 
 
 class NewBookWindow:
     def __init__(self, app: LibraryApp):
         self.app = app
         self.top = tk.Toplevel(app.root)
-        self.top.title("Add New Book")
-        self.top.geometry("420x320")
+        self.top.title("Add New Item")
+        self.top.geometry("520x440")
+        self.top.configure(bg=COLOR_BG)
 
-        frm = ttk.Frame(self.top, padding=12)
-        frm.pack(fill=tk.BOTH, expand=True)
+        # Header
+        header = tk.Frame(self.top, bg=COLOR_PRIMARY, height=70)
+        header.pack(fill=tk.X)
+        header.pack_propagate(False)
 
-        ttk.Label(frm, text="Name").grid(row=0, column=0, sticky='w')
+        title = tk.Label(header, text="➕ Add New Item to Your Library", 
+                        font=("Segoe UI", 14, "bold"), fg="white", bg=COLOR_PRIMARY)
+        title.pack(pady=15)
+
+        # Main frame
+        main = tk.Frame(self.top, bg=COLOR_BG)
+        main.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+
+        # Form fields
         self.name_var = tk.StringVar()
-        ttk.Entry(frm, textvariable=self.name_var, width=48).grid(row=0, column=1, pady=6)
-
-        ttk.Label(frm, text="Author").grid(row=1, column=0, sticky='w')
+        self.create_form_field(main, "📖 Title:", 0, self.name_var)
         self.author_var = tk.StringVar()
-        ttk.Entry(frm, textvariable=self.author_var, width=48).grid(row=1, column=1, pady=6)
-
-        ttk.Label(frm, text="Date (year)").grid(row=2, column=0, sticky='w')
+        self.create_form_field(main, "✍️ Author:", 1, self.author_var)
         self.date_var = tk.StringVar()
-        ttk.Entry(frm, textvariable=self.date_var, width=20).grid(row=2, column=1, sticky='w', pady=6)
+        self.create_form_field(main, "📅 Year:", 2, self.date_var, width=20)
 
-        ttk.Label(frm, text="Category").grid(row=3, column=0, sticky='w', pady=6)
+        # Category dropdown
+        cat_lbl = tk.Label(main, text="🏷️ Category:", font=("Segoe UI", 10, "bold"),
+                          fg=COLOR_PRIMARY, bg=COLOR_BG)
+        cat_lbl.grid(row=3, column=0, sticky='w', pady=(10, 5))
+
         self.cat_var = tk.StringVar()
-        cats = ["Book", "Film", "Magazine"]
-        self.cat_cb = ttk.Combobox(frm, textvariable=self.cat_var, values=cats, width=45)
-        self.cat_cb.grid(row=3, column=1, sticky='ew', pady=6)
+        cats = ["Book", "Film", "Magazine", "Podcast", "Article", "Other"]
+        self.cat_cb = ttk.Combobox(main, textvariable=self.cat_var, values=cats, 
+                                   width=45, state='readonly', font=("Segoe UI", 10))
+        self.cat_cb.grid(row=3, column=1, sticky='ew', pady=(10, 5))
         self.cat_cb.current(0)
 
-        save_btn = ttk.Button(frm, text="Save", command=self.on_save)
-        save_btn.grid(row=4, column=1, pady=(18, 0))
+        # Buttons frame
+        btn_frame = tk.Frame(main, bg=COLOR_BG)
+        btn_frame.grid(row=4, column=0, columnspan=2, pady=(20, 0), sticky='ew')
+
+        save_btn = tk.Button(btn_frame, text="✓ Save", command=self.on_save,
+                            bg=COLOR_SUCCESS, fg="white", font=("Segoe UI", 10, "bold"),
+                            padx=30, pady=8, relief=tk.FLAT, cursor="hand2")
+        save_btn.pack(side=tk.RIGHT, padx=(8, 0))
+
+        cancel_btn = tk.Button(btn_frame, text="✕ Cancel", command=self.top.destroy,
+                              bg="#BDBDBD", fg="white", font=("Segoe UI", 10, "bold"),
+                              padx=30, pady=8, relief=tk.FLAT, cursor="hand2")
+        cancel_btn.pack(side=tk.RIGHT)
+
+    def create_form_field(self, parent, label, row, var, width=45):
+        lbl = tk.Label(parent, text=label, font=("Segoe UI", 10, "bold"),
+                      fg=COLOR_PRIMARY, bg=COLOR_BG)
+        lbl.grid(row=row, column=0, sticky='w', pady=(0, 5))
+
+        entry = ttk.Entry(parent, textvariable=var, width=width, font=("Segoe UI", 10))
+        entry.grid(row=row, column=1, sticky='ew', pady=(0, 5))
+        parent.grid_columnconfigure(1, weight=1)
+
+        return entry
 
     def on_save(self):
         name = self.name_var.get().strip()
@@ -362,40 +547,76 @@ class EditBookWindow:
         self.app = app
         self.index = index
         self.top = tk.Toplevel(app.root)
-        self.top.title("Edit Book")
-        self.top.geometry("420x320")
-
-        frm = ttk.Frame(self.top, padding=12)
-        frm.pack(fill=tk.BOTH, expand=True)
+        self.top.title("Edit Item")
+        self.top.geometry("520x440")
+        self.top.configure(bg=COLOR_BG)
 
         # Load current book data
         book = app.data[index]
 
-        ttk.Label(frm, text="Name").grid(row=0, column=0, sticky='w')
+        # Header
+        header = tk.Frame(self.top, bg=COLOR_PRIMARY, height=70)
+        header.pack(fill=tk.X)
+        header.pack_propagate(False)
+
+        title = tk.Label(header, text="✏️ Edit Item Details", 
+                        font=("Segoe UI", 14, "bold"), fg="white", bg=COLOR_PRIMARY)
+        title.pack(pady=15)
+
+        # Main frame
+        main = tk.Frame(self.top, bg=COLOR_BG)
+        main.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+
+        # Form fields
         self.name_var = tk.StringVar(value=book.get('name',''))
-        ttk.Entry(frm, textvariable=self.name_var, width=48).grid(row=0, column=1, pady=6)
+        self.create_form_field(main, "📖 Title:", 0, self.name_var)
 
-        ttk.Label(frm, text="Author").grid(row=1, column=0, sticky='w')
         self.author_var = tk.StringVar(value=book.get('author',''))
-        ttk.Entry(frm, textvariable=self.author_var, width=48).grid(row=1, column=1, pady=6)
+        self.create_form_field(main, "✍️ Author:", 1, self.author_var)
 
-        ttk.Label(frm, text="Date (year)").grid(row=2, column=0, sticky='w')
         self.date_var = tk.StringVar(value=book.get('date',''))
-        ttk.Entry(frm, textvariable=self.date_var, width=20).grid(row=2, column=1, sticky='w', pady=6)
+        self.create_form_field(main, "📅 Year:", 2, self.date_var, width=20)
 
-        ttk.Label(frm, text="Category").grid(row=3, column=0, sticky='w', pady=6)
+        # Category dropdown
+        cat_lbl = tk.Label(main, text="🏷️ Category:", font=("Segoe UI", 10, "bold"),
+                          fg=COLOR_PRIMARY, bg=COLOR_BG)
+        cat_lbl.grid(row=3, column=0, sticky='w', pady=(10, 5))
+
         self.cat_var = tk.StringVar(value=book.get('category','Uncategorized'))
-        cats = ["Book", "Film", "Magazine"]
-        self.cat_cb = ttk.Combobox(frm, textvariable=self.cat_var, values=cats, width=45)
-        self.cat_cb.grid(row=3, column=1, sticky='ew', pady=6)
-        # if current category is not in list, allow it by setting value
-        if self.cat_var.get() not in cats:
-            self.cat_cb.set(self.cat_var.get())
-        else:
+        cats = ["Book", "Film", "Magazine", "Podcast", "Article", "Other"]
+        self.cat_cb = ttk.Combobox(main, textvariable=self.cat_var, values=cats, 
+                                   width=45, state='readonly', font=("Segoe UI", 10))
+        self.cat_cb.grid(row=3, column=1, sticky='ew', pady=(10, 5))
+        
+        if self.cat_var.get() in cats:
             self.cat_cb.current(cats.index(self.cat_var.get()))
+        else:
+            self.cat_cb.set(self.cat_var.get())
 
-        save_btn = ttk.Button(frm, text="Save", command=self.on_save)
-        save_btn.grid(row=4, column=1, pady=(18, 0))
+        # Buttons frame
+        btn_frame = tk.Frame(main, bg=COLOR_BG)
+        btn_frame.grid(row=4, column=0, columnspan=2, pady=(20, 0), sticky='ew')
+
+        save_btn = tk.Button(btn_frame, text="✓ Save Changes", command=self.on_save,
+                            bg=COLOR_SUCCESS, fg="white", font=("Segoe UI", 10, "bold"),
+                            padx=30, pady=8, relief=tk.FLAT, cursor="hand2")
+        save_btn.pack(side=tk.RIGHT, padx=(8, 0))
+
+        cancel_btn = tk.Button(btn_frame, text="✕ Cancel", command=self.top.destroy,
+                              bg="#BDBDBD", fg="white", font=("Segoe UI", 10, "bold"),
+                              padx=30, pady=8, relief=tk.FLAT, cursor="hand2")
+        cancel_btn.pack(side=tk.RIGHT)
+
+    def create_form_field(self, parent, label, row, var, width=45):
+        lbl = tk.Label(parent, text=label, font=("Segoe UI", 10, "bold"),
+                      fg=COLOR_PRIMARY, bg=COLOR_BG)
+        lbl.grid(row=row, column=0, sticky='w', pady=(0, 5))
+
+        entry = ttk.Entry(parent, textvariable=var, width=width, font=("Segoe UI", 10))
+        entry.grid(row=row, column=1, sticky='ew', pady=(0, 5))
+        parent.grid_columnconfigure(1, weight=1)
+
+        return entry
 
     def on_save(self):
         # Update the book at self.index with new values
