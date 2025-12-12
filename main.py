@@ -483,7 +483,7 @@ class NewBookWindow:
         cat_lbl.grid(row=3, column=0, sticky='w', pady=(10, 5))
 
         self.cat_var = tk.StringVar()
-        cats = ["Book", "Film", "Magazine", "Podcast", "Article", "Other"]
+        cats = ["Book", "Film", "Magazine"]
         self.cat_cb = ttk.Combobox(main, textvariable=self.cat_var, values=cats, 
                                    width=45, state='readonly', font=("Segoe UI", 10))
         self.cat_cb.grid(row=3, column=1, sticky='ew', pady=(10, 5))
@@ -583,7 +583,7 @@ class EditBookWindow:
         cat_lbl.grid(row=3, column=0, sticky='w', pady=(10, 5))
 
         self.cat_var = tk.StringVar(value=book.get('category','Uncategorized'))
-        cats = ["Book", "Film", "Magazine", "Podcast", "Article", "Other"]
+        cats = ["Book", "Film", "Magazine"]
         self.cat_cb = ttk.Combobox(main, textvariable=self.cat_var, values=cats, 
                                    width=45, state='readonly', font=("Segoe UI", 10))
         self.cat_cb.grid(row=3, column=1, sticky='ew', pady=(10, 5))
