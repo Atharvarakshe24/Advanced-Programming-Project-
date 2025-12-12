@@ -1,0 +1,6 @@
+Flask>=2.0
+requests>=2.0
+pytest>=6.0
+# No external pip packages required. Uses Python's built-in tkinter.
+# If you want a themed UI, install: ttkbootstrap
+# ttkbootstrap
