@@ -61,110 +61,67 @@
       <div class="card">
         <h3>🎯 Project Overview</h3>
         <p>
-          Scholar's Digital Library is a comprehensive advanced programming project that implements a full-stack desktop application for managing multimedia collections. The system combines a modern Tkinter graphical user interface with a powerful Flask REST API backend, demonstrating professional software engineering principles including separation of concerns, RESTful architecture, persistent data storage, and comprehensive testing.
-        </p>
-        <p>
-          This project showcases mastery of Python programming, GUI development, web service architecture, data persistence, testing methodologies, and documentation practices—all essential skills for professional software development.
+          Scholar's Digital Library is a full-stack desktop application combining a modern Tkinter GUI with a Flask REST API backend. The system demonstrates professional software engineering with separation of concerns, RESTful architecture, persistent storage, and comprehensive testing.
         </p>
       </div>
 
       <div class="card">
         <h3>🏗️ System Architecture</h3>
-        <p><strong>Three-Tier Architecture:</strong></p>
+        <p><strong>Three-Tier Design:</strong></p>
         <ul>
-          <li><strong>Presentation Layer (Frontend):</strong> Tkinter desktop application providing an intuitive graphical interface for end users to interact with the library system.</li>
-          <li><strong>Application Layer (Backend):</strong> Flask REST API server handling all business logic, request processing, and data validation through standardized HTTP endpoints.</li>
-          <li><strong>Data Layer (Storage):</strong> Centralized JSON-based persistence module with thread-safe file operations and UUID-based record management.</li>
+          <li><strong>Frontend:</strong> Tkinter desktop GUI for user interaction</li>
+          <li><strong>Backend:</strong> Flask REST API with 7 HTTP endpoints</li>
+          <li><strong>Storage:</strong> JSON-based persistence with UUID management</li>
         </ul>
-        <p><strong>Design Philosophy:</strong> The architecture follows HTTP-first communication with intelligent local fallback, ensuring maximum reliability. The GUI attempts to communicate with the Flask backend via HTTP requests; if the server is unavailable, it seamlessly falls back to direct local JSON file operations.</p>
+        <p>The GUI communicates via HTTP with intelligent local fallback if the server is unavailable.</p>
       </div>
 
       <div class="card">
-        <h3>⚙️ Backend Implementation (Flask REST API)</h3>
-        <p>The Flask backend (<code>server.py</code>) implements a complete RESTful API with 7 HTTP endpoints covering all CRUD operations:</p>
+        <h3>⚙️ Backend Implementation</h3>
+        <p>Flask REST API (<code>server.py</code>) with 7 endpoints:</p>
         <ul>
-          <li><strong>GET /media</strong> → Returns all media items in JSON format</li>
-          <li><strong>GET /media?category=X</strong> → Filters and returns items by category (Book, Film, or Magazine)</li>
-          <li><strong>GET /media/search?name=X</strong> → Performs exact-match search by name; returns 404 if not found</li>
-          <li><strong>GET /media/&lt;id&gt;</strong> → Retrieves a specific item by its UUID</li>
-          <li><strong>POST /media</strong> → Creates a new media item with validation; returns 201 on success with created item</li>
-          <li><strong>PUT /media/&lt;id&gt;</strong> → Updates an existing item while preserving its UUID</li>
-          <li><strong>DELETE /media/&lt;id&gt;</strong> → Removes an item; returns 404 if not found, 200 on success</li>
-        </ul>
-        <p><strong>Technical Features:</strong> The backend uses Flask's application factory pattern (<code>create_app()</code>), proper HTTP status codes, JSON response formatting, and integrates seamlessly with the centralized storage module for all data operations.</p>
-      </div>
-
-      <div class="card">
-        <h3>🖥️ Frontend Implementation (Tkinter GUI)</h3>
-        <p>The Tkinter desktop application (<code>main.py</code>) provides a professional-grade user interface with the following features:</p>
-        <ul>
-          <li><strong>Main Table View:</strong> Displays all library items in a sortable table with columns for Serial Number, Name, Author, Date, and Category. Features alternating row colors for enhanced readability.</li>
-          <li><strong>Category Filter:</strong> Dropdown combobox allowing users to filter by "All", "Book", "Film", or "Magazine" categories with instant results.</li>
-          <li><strong>Exact-Match Search:</strong> Real-time search functionality that finds items by exact name matching, meeting project requirements for precise querying.</li>
-          <li><strong>CRUD Operations:</strong> 
-            <ul>
-              <li><strong>Load:</strong> Fetches all items via HTTP GET request with local fallback</li>
-              <li><strong>New:</strong> Opens dialog for adding items via HTTP POST</li>
-              <li><strong>Edit:</strong> Double-click or "Sort by Date" to edit; preserves UUID and updates via HTTP PUT</li>
-              <li><strong>Delete:</strong> "Erase" button removes selected item via HTTP DELETE</li>
-            </ul>
-          </li>
-          <li><strong>Serial Numbering:</strong> Automatically assigns sequential numbers (1, 2, 3...) to displayed items for easy reference.</li>
-          <li><strong>UUID Management:</strong> All records identified by stable UUIDs stored as tree item IDs, preventing data mismatches during edits.</li>
-        </ul>
-        <p><strong>User Experience:</strong> The interface includes clear button labels, instant visual feedback, error handling dialogs, and responsive layout that adapts to window resizing.</p>
-      </div>
-
-      <div class="card">
-        <h3>💾 Data Persistence & Storage</h3>
-        <p>The centralized storage module (<code>storage.py</code>) handles all data persistence with robust reliability:</p>
-        <ul>
-          <li><strong>JSON File Format:</strong> All data stored in <code>media.json</code> with human-readable structure for easy debugging and manual editing if needed.</li>
-          <li><strong>UUID Management:</strong> Automatic UUID generation for new items; existing UUIDs preserved during updates to maintain referential integrity.</li>
-          <li><strong>Thread Safety:</strong> Threading locks prevent race conditions during concurrent file write operations.</li>
-          <li><strong>Core Functions:</strong>
-            <ul>
-              <li><code>load_data()</code> - Loads JSON and auto-injects missing UUIDs</li>
-              <li><code>save_data()</code> - Thread-locked file writes</li>
-              <li><code>list_all()</code> - Returns all records</li>
-              <li><code>list_by_category(category)</code> - Filters by Book/Film/Magazine</li>
-              <li><code>search_by_name_exact(name)</code> - Exact string matching</li>
-              <li><code>get_by_id(item_id)</code> - UUID-based retrieval</li>
-              <li><code>create_item(data)</code> - Adds with UUID assignment</li>
-              <li><code>update_item(item_id, data)</code> - Updates while preserving ID</li>
-              <li><code>delete_item(item_id)</code> - Removes by UUID</li>
-            </ul>
-          </li>
+          <li><strong>GET /media</strong> → List all items or filter by category</li>
+          <li><strong>GET /media/search?name=X</strong> → Exact name search</li>
+          <li><strong>GET /media/&lt;id&gt;</strong> → Get specific item</li>
+          <li><strong>POST /media</strong> → Create new item</li>
+          <li><strong>PUT /media/&lt;id&gt;</strong> → Update existing item</li>
+          <li><strong>DELETE /media/&lt;id&gt;</strong> → Remove item</li>
         </ul>
       </div>
 
       <div class="card">
-        <h3>🧪 Testing & Quality Assurance</h3>
-        <p>The project includes a comprehensive test suite using pytest with 3 distinct test functions across 2 test files:</p>
+        <h3>🖥️ Frontend Features</h3>
+        <p>Modern Tkinter interface (<code>main.py</code>) with:</p>
         <ul>
-          <li><strong>test_storage_add_and_delete()</strong> in <code>tests/test_storage.py</code>
-            <ul>
-              <li>Tests storage layer with temporary files</li>
-              <li>Validates create, list, and delete operations</li>
-              <li>Includes 6+ assertions covering record count, field values, and deletion success</li>
-            </ul>
-          </li>
-          <li><strong>test_server_endpoints()</strong> in <code>tests/test_server.py</code>
-            <ul>
-              <li>Tests Flask backend with Flask test client</li>
-              <li>Validates POST (create), GET (list), search, and DELETE endpoints</li>
-              <li>Includes 8+ assertions covering HTTP status codes, response data, and not-found scenarios</li>
-            </ul>
-          </li>
-          <li><strong>test_category_filtering()</strong> in <code>tests/test_server.py</code>
-            <ul>
-              <li>Creates test items in Book, Film, and Magazine categories</li>
-              <li>Tests category-specific filtering via GET /media?category=X</li>
-              <li>Includes 6+ assertions verifying correct filtering and counts</li>
-            </ul>
-          </li>
+          <li>Sortable table with alternating row colors</li>
+          <li>Category filtering (All, Book, Film, Magazine)</li>
+          <li>Search functionality for titles and authors</li>
+          <li>Add, Edit, Delete, and View Details dialogs</li>
+          <li>Status bar showing collection statistics</li>
+          <li>Right-click context menu for quick actions</li>
         </ul>
-        <p><strong>Test Execution:</strong> Run <code>pytest -q</code> to execute all tests with quick output summary.</p>
+      </div>
+
+      <div class="card">
+        <h3>💾 Data Storage</h3>
+        <p>Centralized storage module (<code>storage.py</code>) features:</p>
+        <ul>
+          <li>JSON file format in <code>media.json</code></li>
+          <li>Automatic UUID generation and management</li>
+          <li>Thread-safe file operations</li>
+          <li>Functions: list, search, create, update, delete</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>🧪 Testing</h3>
+        <p>Comprehensive pytest suite with 3 test functions:</p>
+        <ul>
+          <li><strong>test_storage_add_and_delete</strong> - Storage layer validation</li>
+          <li><strong>test_server_endpoints</strong> - Flask API testing</li>
+          <li><strong>test_storage_update_and_filters</strong> - Category and search testing</li>
+        </ul>
+        <p>Run with: <code>pytest -q</code></p>
       </div>
 
       <div class="card">
