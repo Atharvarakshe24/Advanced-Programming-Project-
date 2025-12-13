@@ -42,13 +42,6 @@
     "id": "49f4a3aa-c714-4e13-936d-81986378f6e0"
   },
   {
-    "name": "Inception",
-    "author": "Christopher Nolan",
-    "date": "2010",
-    "category": "Film",
-    "id": "film1"
-  },
-  {
     "name": "The Matrix",
     "author": "Wachowski Brothers",
     "date": "1999",
@@ -63,4 +56,3 @@
     "id": "mag1"
   }
 ]
-
